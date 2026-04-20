@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pomodoro Flow</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <section class="hero">
+      <p class="eyebrow">Focus with rhythm</p>
+      <h1>Pomodoro Flow</h1>
+      <p class="subtitle">A calm timer for focus sessions, short breaks, and steady daily progress.</p>
+    </section>
+
+    <section class="timer-card">
+      <div class="session-header">
+        <div>
+          <p class="session-label">Current session</p>
+          <h2 id="sessionName">Work</h2>
+        </div>
+        <div class="session-badge" id="cycleCount">1 / 4</div>
+      </div>
+
+      <div class="ring-wrap">
+        <svg class="progress-ring" viewBox="0 0 220 220" aria-hidden="true">
+          <circle class="ring-bg" cx="110" cy="110" r="92"></circle>
+          <circle class="ring-progress" id="progressRing" cx="110" cy="110" r="92"></circle>
+        </svg>
+        <div class="time-display">
+          <span id="timeText">25:00</span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="startPauseButton" class="primary">Start</button>
+        <button id="skipButton" class="secondary">Skip</button>
+        <button id="resetButton" class="ghost">Reset</button>
+      </div>
+
+      <div class="status-grid">
+        <article>
+          <span class="status-label">Completed today</span>
+          <strong id="completedCount">0</strong>
+        </article>
+        <article>
+          <span class="status-label">Up next</span>
+          <strong id="nextSession">Short break</strong>
+        </article>
+      </div>
+    </section>
+
+    <section class="settings-card">
+      <div class="settings-head">
+        <h3>Settings</h3>
+        <p>Adjust the rhythm to match the way you like to work.</p>
+      </div>
+
+      <div class="settings-grid">
+        <label>
+          <span>Work</span>
+          <input id="workMinutes" type="number" min="1" max="90" value="25">
+        </label>
+        <label>
+          <span>Short break</span>
+          <input id="shortBreakMinutes" type="number" min="1" max="30" value="5">
+        </label>
+        <label>
+          <span>Long break</span>
+          <input id="longBreakMinutes" type="number" min="1" max="60" value="15">
+        </label>
+        <label>
+          <span>Cycles before long break</span>
+          <input id="cyclesBeforeLongBreak" type="number" min="2" max="8" value="4">
+        </label>
+      </div>
+
+      <button id="applySettingsButton" class="secondary wide">Apply settings</button>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
