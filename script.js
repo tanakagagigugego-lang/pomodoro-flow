@@ -11,6 +11,9 @@ const sessionLabels = {
   longBreak: "Long break",
 };
 
+const SOUND_STORAGE_KEY = "pomodoroSoundEnabled";
+const AUTO_START_STORAGE_KEY = "pomodoroAutoStartEnabled";
+
 const elements = {
   sessionName: document.getElementById("sessionName"),
   cycleCount: document.getElementById("cycleCount"),
@@ -19,6 +22,8 @@ const elements = {
   startPauseButton: document.getElementById("startPauseButton"),
   skipButton: document.getElementById("skipButton"),
   resetButton: document.getElementById("resetButton"),
+  soundButton: document.getElementById("soundButton"),
+  autoStartButton: document.getElementById("autoStartButton"),
   completedCount: document.getElementById("completedCount"),
   nextSession: document.getElementById("nextSession"),
   workMinutes: document.getElementById("workMinutes"),
@@ -42,6 +47,9 @@ const state = {
   currentCycle: 1,
   timerId: null,
   running: false,
+  soundEnabled: localStorage.getItem(SOUND_STORAGE_KEY) !== "false",
+  autoStartEnabled: localStorage.getItem(AUTO_START_STORAGE_KEY) === "true",
+  audioContext: null,
 };
 
 function formatTime(seconds) {
@@ -83,8 +91,52 @@ function updateLabels() {
   elements.completedCount.textContent = String(state.completedPomodoros);
   elements.nextSession.textContent = sessionLabels[nextSessionType()];
   elements.startPauseButton.textContent = state.running ? "Pause" : "Start";
+  elements.soundButton.textContent = `Sound: ${state.soundEnabled ? "ON" : "OFF"}`;
+  elements.autoStartButton.textContent = `Auto start: ${state.autoStartEnabled ? "ON" : "OFF"}`;
   document.title = `${formatTime(state.timeRemaining)} | ${sessionLabels[state.sessionType]}`;
   updateProgress();
+}
+
+function getAudioContext() {
+  if (!state.audioContext) {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    state.audioContext = AudioContext ? new AudioContext() : null;
+  }
+
+  return state.audioContext;
+}
+
+function unlockSound() {
+  const audioContext = getAudioContext();
+  if (audioContext && audioContext.state === "suspended") {
+    audioContext.resume();
+  }
+}
+
+function playNotificationSound() {
+  if (!state.soundEnabled) {
+    return;
+  }
+
+  const audioContext = getAudioContext();
+  if (!audioContext) {
+    return;
+  }
+
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+  const now = audioContext.currentTime;
+
+  oscillator.type = "sine";
+  oscillator.frequency.setValueAtTime(880, now);
+  gainNode.gain.setValueAtTime(0.0001, now);
+  gainNode.gain.exponentialRampToValueAtTime(0.18, now + 0.02);
+  gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  oscillator.start(now);
+  oscillator.stop(now + 0.2);
 }
 
 function clearTimer() {
@@ -94,7 +146,7 @@ function clearTimer() {
   }
 }
 
-function switchSession(nextType) {
+function switchSession(nextType, shouldAutoStart = false) {
   clearTimer();
   state.running = false;
 
@@ -108,6 +160,11 @@ function switchSession(nextType) {
   state.totalDuration = durationFor(nextType);
   state.timeRemaining = state.totalDuration;
   updateLabels();
+  playNotificationSound();
+
+  if (shouldAutoStart && state.autoStartEnabled) {
+    startTimer();
+  }
 }
 
 function tick() {
@@ -117,7 +174,7 @@ function tick() {
     return;
   }
 
-  switchSession(nextSessionType());
+  switchSession(nextSessionType(), true);
 }
 
 function startTimer() {
@@ -163,6 +220,8 @@ function applySettings() {
 }
 
 elements.startPauseButton.addEventListener("click", () => {
+  unlockSound();
+
   if (state.running) {
     pauseTimer();
   } else {
@@ -184,6 +243,23 @@ elements.resetButton.addEventListener("click", () => {
   updateLabels();
 });
 
+elements.soundButton.addEventListener("click", () => {
+  state.soundEnabled = !state.soundEnabled;
+  localStorage.setItem(SOUND_STORAGE_KEY, String(state.soundEnabled));
+
+  if (state.soundEnabled) {
+    unlockSound();
+  }
+
+  updateLabels();
+});
+
+elements.autoStartButton.addEventListener("click", () => {
+  state.autoStartEnabled = !state.autoStartEnabled;
+  localStorage.setItem(AUTO_START_STORAGE_KEY, String(state.autoStartEnabled));
+  updateLabels();
+});
+
 elements.applySettingsButton.addEventListener("click", applySettings);
 
 Object.entries(DEFAULTS).forEach(([key, value]) => {
@@ -193,3 +269,9 @@ Object.entries(DEFAULTS).forEach(([key, value]) => {
 });
 
 updateLabels();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js");
+  });
+}
