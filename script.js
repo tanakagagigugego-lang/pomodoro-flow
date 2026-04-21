@@ -1,7 +1,7 @@
 const DEFAULTS = {
   workMinutes: 25,
   shortBreakMinutes: 5,
-  longBreakMinutes: 15,
+  longBreakMinutes: 20,
   cyclesBeforeLongBreak: 4,
 };
 
